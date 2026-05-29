@@ -45,7 +45,7 @@ Como testar os sensores:
    python -m sensores.sensor_cancela
    ```
 
-   5. Cliente teste
+6. Cliente teste
    ```bash
    python -m cliente.cliente
    ```
