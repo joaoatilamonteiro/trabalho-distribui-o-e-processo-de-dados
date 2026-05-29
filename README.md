@@ -27,7 +27,12 @@ Como testar os sensores:
    ```bash
    pip install protobuf grpcio-tools
    ```
-4. Execução dos Sensores
+4. Executar o Gateway
+   ```bash
+   python -m gateway.gateway
+   ```
+
+5. Execução dos Sensores(Em outros terminais)
    ```bash
    python -m sensores.sensor_estaciona
    ```
@@ -39,4 +44,14 @@ Como testar os sensores:
    ```bash
    python -m sensores.sensor_cancela
    ```
-   
+
+   5. Cliente teste
+   ```bash
+   python -m cliente.cliente
+   ```
+   1 - STATUS
+   2 - MAPA
+   3 - RESET
+   4 - OPEN cancela
+   5 - CLOSE cancela
+
