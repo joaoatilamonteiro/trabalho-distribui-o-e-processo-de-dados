@@ -11,6 +11,7 @@ Sensores_estacionamento/
 ├── venv/
 └── README.md
 ```
+Como testar os sensores:
 
 
 1. Criar ambiente virtual
