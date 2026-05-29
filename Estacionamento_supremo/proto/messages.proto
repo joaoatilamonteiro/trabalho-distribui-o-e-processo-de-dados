@@ -11,8 +11,8 @@ message DiscoveryMessage {
 message SensorData {
   string sensor_id = 1;
   string sensor_type = 2;
-  double value = 3;
-  string unit = 4;
+  int32 vaga_id = 3;
+  string acao = 4;
   int64 timestamp = 5;
 }
 
