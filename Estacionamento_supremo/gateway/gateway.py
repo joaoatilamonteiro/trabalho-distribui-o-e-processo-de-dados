@@ -1,33 +1,39 @@
 import socket
 import threading
 import time
-
 from generated import messages_pb2
 
-
 # =========================
-# ESTADO DO ESTACIONAMENTO
+# ESTADO GLOBAL
 # =========================
 
 TOTAL_VAGAS = 100
 entradas = 0
 saidas = 0
 
+lock = threading.Lock()
+
+
+# =========================
+# FUNÇÃO ESTADO
+# =========================
 
 def calcular_estado():
     ocupadas = entradas - saidas
+
     if ocupadas < 0:
         ocupadas = 0
 
+    if ocupadas > TOTAL_VAGAS:
+        ocupadas = TOTAL_VAGAS
+
     livres = TOTAL_VAGAS - ocupadas
-    if livres < 0:
-        livres = 0
 
     return ocupadas, livres
 
 
 # =========================
-# UDP - RECEBER SENSORES
+# UDP - SENSORES
 # =========================
 
 UDP_PORT = 6000
@@ -39,7 +45,7 @@ def escutar_udp():
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.bind(("0.0.0.0", UDP_PORT))
 
-    print("[GATEWAY] escutando sensores UDP...")
+    print("[GATEWAY] UDP escutando...")
 
     while True:
         data, addr = sock.recvfrom(4096)
@@ -47,77 +53,100 @@ def escutar_udp():
         msg = messages_pb2.SensorData()
         msg.ParseFromString(data)
 
-        print(f"[SENSOR] {msg.sensor_type} -> {msg.value}")
+        print(f"[SENSOR] {msg.sensor_type} | value={msg.value}")
 
-        # Lógica simples baseada no tipo de sensor
-        if msg.sensor_type == "traffic_flow":
-            entradas += int(msg.value)
+        with lock:
+            if msg.sensor_type == "traffic_flow":
+                entradas += int(msg.value)
 
-        elif msg.sensor_type == "exit_flow":
-            saidas += int(msg.value)
+            elif msg.sensor_type == "exit_flow":
+                saidas += int(msg.value)
 
-        elif msg.sensor_type == "parking":
-            pass  # só informativo
+        ocupadas, livres = calcular_estado()
+        print(f"[ESTADO] Ocupadas={ocupadas} | Livres={livres}")
 
 
 # =========================
-# TCP - CLIENTE
+# TCP - CLIENTE (MULTI CONEXÃO)
 # =========================
 
 TCP_PORT = 7000
 
 
+def handle_client(conn, addr):
+    print(f"[CLIENTE CONECTADO] {addr}")
+
+    while True:
+        try:
+            data = conn.recv(1024).decode().strip()
+
+            if not data:
+                break
+
+            print(f"[CLIENTE] {data}")
+
+            ocupadas, livres = calcular_estado()
+
+            if data == "STATUS":
+                resposta = f"""
+====================
+TOTAL: {TOTAL_VAGAS}
+OCUPADAS: {ocupadas}
+LIVRES: {livres}
+====================
+"""
+                conn.send(resposta.encode())
+
+            elif data == "RESET":
+                global entradas, saidas
+                with lock:
+                    entradas = 0
+                    saidas = 0
+                conn.send(b"RESET OK")
+
+            else:
+                conn.send(b"COMANDO INVALIDO")
+
+        except:
+            break
+
+    conn.close()
+    print("[CLIENTE DESCONECTADO]")
+
+
 def servidor_tcp():
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server.bind(("0.0.0.0", TCP_PORT))
-    server.listen(1)
+    server.listen(5)
 
-    print("[GATEWAY] aguardando cliente TCP...")
-
-    conn, addr = server.accept()
-    print("[GATEWAY] cliente conectado")
+    print("[GATEWAY] TCP pronto...")
 
     while True:
-
-        data = conn.recv(1024).decode()
-
-        if not data:
-            break
-
-        print("[CLIENTE]", data)
-
-        ocupadas, livres = calcular_estado()
-
-        if data == "STATUS":
-
-            resposta = f"""
-TOTAL_VAGAS: {TOTAL_VAGAS}
-OCUPADAS: {ocupadas}
-LIVRES: {livres}
-"""
-
-            conn.send(resposta.encode())
-
-        elif data == "OPEN_GATE":
-            conn.send(b"Cancela aberta")
-
-        elif data == "CLOSE_GATE":
-            conn.send(b"Cancela fechada")
-
-        else:
-            conn.send(b"Comando desconhecido")
+        conn, addr = server.accept()
+        threading.Thread(target=handle_client, args=(conn, addr), daemon=True).start()
 
 
 # =========================
-# START GATEWAY
+# DEBUG LOOP (IMPORTANTE)
+# =========================
+
+def debug_estado():
+    while True:
+        time.sleep(5)
+        ocupadas, livres = calcular_estado()
+        print(f"[DEBUG] OCUPADAS={ocupadas} LIVRES={livres}")
+
+
+# =========================
+# START
 # =========================
 
 if __name__ == "__main__":
-
-    print("[GATEWAY] iniciando...")
+    print("[GATEWAY] iniciando sistema...")
 
     threading.Thread(target=escutar_udp, daemon=True).start()
     threading.Thread(target=servidor_tcp, daemon=True).start()
+    threading.Thread(target=debug_estado, daemon=True).start()
 
     while True:
         time.sleep(1)
