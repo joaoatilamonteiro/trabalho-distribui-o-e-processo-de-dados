@@ -7,7 +7,6 @@ from generated import messages_pb2
 
 GATEWAY_IP = "127.0.0.1"
 GATEWAY_PORT = 6000
-
 CONTROL_PORT = 7001
 
 
@@ -31,15 +30,18 @@ class Cancela:
 
         while True:
 
-            if self.active:
-
-                carros_passando = random.randint(0, 5)
+            # só gera eventos quando aberta
+            if self.active and self.state == "OPEN":
 
                 msg = messages_pb2.SensorData()
+
                 msg.sensor_id = self.sensor_id
                 msg.sensor_type = "gate"
-                msg.value = carros_passando
-                msg.unit = "cars"
+
+                msg.vaga_id = random.randint(1, 100)
+
+                msg.acao = "ENTRADA"
+
                 msg.timestamp = int(time.time())
 
                 sock.sendto(
@@ -47,13 +49,15 @@ class Cancela:
                     (GATEWAY_IP, GATEWAY_PORT)
                 )
 
-                print(f"[CANELA] {self.state} -> carros: {carros_passando}")
+                print(
+                    f"[CANCELA] carro entrou na vaga {msg.vaga_id}"
+                )
 
             time.sleep(self.interval)
 
 
     # =========================
-    # TCP (CONTROLE)
+    # TCP (CONTROLE COM PROTOBUF)
     # =========================
     def servidor_tcp(self):
 
@@ -61,40 +65,42 @@ class Cancela:
         server.bind(("0.0.0.0", CONTROL_PORT))
         server.listen(1)
 
-        print("[CANELA] aguardando comandos TCP...")
+        print("[CANCELA] aguardando comandos TCP...")
 
         conn, addr = server.accept()
 
-        print("[CANELA] gateway conectado")
+        print("[CANCELA] gateway conectado")
 
         while True:
 
-            data = conn.recv(1024).decode()
+            data = conn.recv(1024)
 
             if not data:
                 break
 
-            print("[COMANDO RECEBIDO]:", data)
+            cmd = messages_pb2.ControlCommand()
+            cmd.ParseFromString(data)
 
-            if data == "OPEN":
+            print(f"[COMANDO] {cmd.command}")
+
+            if cmd.command == "OPEN":
                 self.state = "OPEN"
-                print("[CANELA] ABERTA")
+                print("[CANCELA] ABERTA")
 
-            elif data == "CLOSE":
+            elif cmd.command == "CLOSE":
                 self.state = "CLOSED"
-                print("[CANELA] FECHADA")
+                print("[CANCELA] FECHADA")
 
-            elif data == "TURN_OFF":
+            elif cmd.command == "TURN_OFF":
                 self.active = False
 
-            elif data == "TURN_ON":
+            elif cmd.command == "TURN_ON":
                 self.active = True
 
-            elif data.startswith("SET_INTERVAL"):
-                _, value = data.split()
-                self.interval = int(value)
+            elif cmd.command == "SET_INTERVAL":
+                self.interval = int(cmd.value)
 
-            elif data == "RESET":
+            elif cmd.command == "RESET":
                 self.state = "CLOSED"
                 self.active = True
                 self.interval = 3
@@ -105,8 +111,15 @@ class Cancela:
     # =========================
     def start(self):
 
-        threading.Thread(target=self.enviar_dados, daemon=True).start()
-        threading.Thread(target=self.servidor_tcp, daemon=True).start()
+        threading.Thread(
+            target=self.enviar_dados,
+            daemon=True
+        ).start()
+
+        threading.Thread(
+            target=self.servidor_tcp,
+            daemon=True
+        ).start()
 
         while True:
             time.sleep(1)
