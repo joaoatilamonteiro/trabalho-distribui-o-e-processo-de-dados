@@ -1,42 +1,30 @@
 import socket
-import time
 import random
-
+import time
 from generated import messages_pb2
 
+UDP_IP = "127.0.0.1"
+UDP_PORT = 6000
 
-GATEWAY_IP = "127.0.0.1"
-GATEWAY_PORT = 6000
+sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
-sensor_id = "F1"
+while True:
 
+    msg = messages_pb2.SensorData()
 
-def main():
+    msg.sensor_id = "fluxo_1"
+    msg.sensor_type = "parking_flow"
 
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    # vaga_id vai dentro do value
+    msg.value = random.randint(1, 100)
 
-    print("[FLUXO] sensor iniciado...")
+    # entrada ou saída vai no unit
+    msg.unit = random.choice(["entrada", "saida"])
 
-    while True:
+    msg.timestamp = int(time.time())
 
-        fluxo = random.randint(0, 30)  # carros por ciclo
+    sock.sendto(msg.SerializeToString(), (UDP_IP, UDP_PORT))
 
-        msg = messages_pb2.SensorData()
-        msg.sensor_id = sensor_id
-        msg.sensor_type = "traffic_flow"
-        msg.value = fluxo
-        msg.unit = "cars/min"
-        msg.timestamp = int(time.time())
+    print(f"Enviado: vaga {msg.value} - {msg.unit}")
 
-        sock.sendto(
-            msg.SerializeToString(),
-            (GATEWAY_IP, GATEWAY_PORT)
-        )
-
-        print(f"[FLUXO] carros/min: {fluxo}")
-
-        time.sleep(3)
-
-
-if __name__ == "__main__":
-    main()
+    time.sleep(2)
