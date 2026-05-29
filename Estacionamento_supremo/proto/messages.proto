@@ -12,7 +12,7 @@ message SensorData {
   string sensor_id = 1;
   string sensor_type = 2;
   int32 vaga_id = 3;
-  string acao = 4;
+  string acao = 4;   // ENTRADA, SAIDA, OCUPADA, LIVRE
   int64 timestamp = 5;
 }
 
