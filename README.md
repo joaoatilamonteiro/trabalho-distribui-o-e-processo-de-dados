@@ -1,16 +1,23 @@
 ```bash
-Sensores_estacionamento/
-│
-├── sensores/
-│   ├── sensor_estaciona.py   # Sensor de vagas do estacionamento
-│   ├── sensor_fluxo.py       # Sensor de fluxo de veículos
-│   ├── sensor_cancela.py     # Cancela eletrônica (controlável via TCP)
-│
-├── proto/
+trabalho-distribui-o-e-processo-de-dados/
+├── cliente/
+│   └── cliente.py             # Cliente Analítico (Interface de controle e consultas)
+├── gateway/
+│   └── gateway.py             # Gerente Central do sistema (Gerencia TCP e escuta UDP)
 ├── generated/
-├── venv/
-└── README.md
+│   ├── messages.proto         # Contrato oficial de mensagens (Protocol Buffers)
+│   ├── messages_pb2.py        # Código Python gerado automaticamente
+│   └── messages_pb2.pyi       # Arquivo de tipagem (ajuda o VS Code no autocompletar)
+├── sensores/
+│   ├── sensor_cancela.py      # Fonte Controlável (Comandos TCP e tráfego UDP)
+│   ├── sensor_estaciona.py    # Fonte Contínua c/ Descoberta (Multicast e UDP)
+│   └── sensor_fluxo.py        # Fonte Contínua Simples (Apenas tráfego UDP)
+├── .gitignore                 # Arquivos ignorados pelo Git (.venv, __pycache__)
+└── README.md                  # Documentação do projeto
+
 ```
+
+
 Como testar os sensores:
 
 
