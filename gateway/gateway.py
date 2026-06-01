@@ -1,5 +1,4 @@
 import socket
-import struct
 import threading
 import time
 from generated import messages_pb2

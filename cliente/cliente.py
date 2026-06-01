@@ -1,5 +1,6 @@
 import socket
 
+from generated import messages_pb2
 HOST = "127.0.0.1"
 PORT = 7000
 
@@ -13,6 +14,20 @@ def menu():
     print("5 - CLOSE cancela")
     print("0 - sair")
 
+def envia_requisicao(client,comando_str):
+    requisicao = messages_pb2.ControlCommand()
+    requisicao.command = comando_str
+
+    client.send(requisicao.SerializeToString())
+
+    informacao = client.recv(10000)
+    if not informacao:
+        return "conexao perdida"
+
+    resposta = messages_pb2.ControlCommand()
+    resposta.ParseFromString(informacao)
+
+    return resposta.value
 
 def main():
 
@@ -30,27 +45,25 @@ def main():
             break
 
         elif op == "1":
-            client.send(b"STATUS")
-            print(client.recv(4096).decode())
+            print(envia_requisicao(client,"STATUS"))
 
         elif op == "2":
-            client.send(b"MAPA")
-            print(client.recv(10000).decode())
+            print(envia_requisicao(client,"MAPA"))
+
 
         elif op == "3":
-            client.send(b"RESET")
-            print(client.recv(4096).decode())
+            print(envia_requisicao(client,"RESET"))
 
         elif op == "4":
-            client.send(b"OPEN")
-            print("Cancela aberta")
+            print(envia_requisicao(client,"OPEN"))
+
 
         elif op == "5":
-            client.send(b"CLOSE")
-            print("Cancela fechada")
+            print(envia_requisicao(client,"CLOSE"))
+
 
         else:
-            print("Comando inválido")
+            print("comando invalido!")
 
     client.close()
 
