@@ -9,9 +9,12 @@ def menu():
     print("\n===== CLIENTE ANALÍTICO =====")
     print("1 - STATUS do estacionamento")
     print("2 - MAPA de vagas")
-    print("3 - RESET sistema")
-    print("4 - OPEN cancela")
-    print("5 - CLOSE cancela")
+    print("3 - Reinicia sistema")
+    print("4 - Abre cancela")
+    print("5 - Fecha cancela")
+    print("6 - Listar sensores conectados")
+    print("7 - Relatório analítico")
+    print("8 - BOTÃO DE FALHA")
     print("0 - sair")
 
 def envia_requisicao(client,comando_str):
@@ -60,6 +63,12 @@ def main():
 
         elif op == "5":
             print(envia_requisicao(client,"CLOSE"))
+
+        elif op == "6":
+            print(envia_requisicao(client,"LISTAR"))
+
+        elif op == "7":
+            print(envia_requisicao(client,"ANALISE"))
 
 
         else:

@@ -13,6 +13,8 @@ MULTICAST_GROUP = "224.1.1.1"
 MULTICAST_PORT = 5007
 
 TOTAL_VAGAS = 100
+total_entradas = 0
+total_saidas = 0
 
 vagas = {i: False for i in range(1, TOTAL_VAGAS + 1)}
 sensores_registrados = {}
@@ -62,7 +64,7 @@ def calcular_estado():
     return ocupadas, livres
 
 def processar_msg(msg):
-    
+    global total_entradas, total_saidas
     vaga = msg.vaga_id
     acao = msg.acao
 
@@ -72,8 +74,10 @@ def processar_msg(msg):
     with lock:
         if acao in ["entrada", "ocupada", "OCUPADA", "ENTRADA"]:
             vagas[vaga] = True
+            total_entradas+=1
         elif acao in ["saida", "livre", "LIVRE", "SAIDA"]:
             vagas[vaga] = False
+            total_saidas += 1
 
 def escutar_udp():
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -155,6 +159,27 @@ def handle_client(conn, addr):
                     for i in vagas: vagas[i] = False
                 resp.value = "Sistema Resetado!"
 
+            elif req.command == "LISTAR":
+                with lock:
+                    if not sensores_registrados:
+                        resp.value = "Nenhum sensor registrado"
+                    else:
+                        lista = ["--- SENSORES CONECTADOS ---"]
+                        for s_id, info in sensores_registrados.items():
+                            lista.append(f"ID: {s_id} | Tipo: {info['tipo']} | IP: {info['ip']}:{info['tcp_port']}")
+                        resp.value = "\n".join(lista)
+
+            elif req.command == "ANALISE":
+                ocupadas, livres = calcular_estado()
+
+                taxa_ocupacao = (ocupadas/TOTAL_VAGAS) *100
+                relatorio = [
+                    "--- RELATÓRIO ANALÍTICO AGREGADO ---",
+                    f"Movimentações de Entrada Registradas: {total_entradas}",
+                    f"Movimentações de Saída Registradas: {total_saidas}",
+                    f"Taxa de Ocupação Atual do Pátio: {taxa_ocupacao:.1f}%"
+                ]
+                resp.value = "\n".join(relatorio)
             elif req.command in ["OPEN", "CLOSE"]:
                 
                 resultado = enviar_comando_sensor("C1", req.command)
