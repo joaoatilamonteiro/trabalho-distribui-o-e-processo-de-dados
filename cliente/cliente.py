@@ -70,6 +70,9 @@ def main():
         elif op == "7":
             print(envia_requisicao(client,"ANALISE"))
 
+        elif op == "8":
+            print(envia_requisicao(client, "FALHA"))
+
 
         else:
             print("comando invalido!")

@@ -15,6 +15,7 @@ MULTICAST_PORT = 5007
 TOTAL_VAGAS = 100
 total_entradas = 0
 total_saidas = 0
+cancela_aberta = True
 
 vagas = {i: False for i in range(1, TOTAL_VAGAS + 1)}
 sensores_registrados = {}
@@ -64,9 +65,13 @@ def calcular_estado():
     return ocupadas, livres
 
 def processar_msg(msg):
-    global total_entradas, total_saidas
+    global total_entradas, total_saidas, cancela_aberta
     vaga = msg.vaga_id
     acao = msg.acao
+
+    if not cancela_aberta:
+        return
+
 
     if vaga < 1 or vaga > TOTAL_VAGAS:
         return
@@ -127,6 +132,7 @@ def enviar_comando_sensor(sensor_id, comando_str):
 
 
 def handle_client(conn, addr):
+    global cancela_aberta
     print(f"[CLIENTE] {addr} conectado")
 
     while True:
@@ -180,7 +186,12 @@ def handle_client(conn, addr):
                     f"Taxa de Ocupação Atual do Pátio: {taxa_ocupacao:.1f}%"
                 ]
                 resp.value = "\n".join(relatorio)
-            elif req.command in ["OPEN", "CLOSE"]:
+            elif req.command in ["OPEN", "CLOSE","FALHA"]:
+
+                if req.command == "OPEN":
+                    cancela_aberta = True
+                elif req.command == "CLOSE":
+                    cancela_aberta = False
                 
                 resultado = enviar_comando_sensor("C1", req.command)
                 resp.value = resultado
