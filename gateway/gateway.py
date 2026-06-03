@@ -257,12 +257,12 @@ def handle_client(conn, addr):
 
 
 # =========================
-# SNAPSHOT 2 MIN
+# SNAPSHOT 1 MIN
 # =========================
 
 def salvar_snapshot():
     while True:
-        time.sleep(120)
+        time.sleep(60)
 
         with lock:
             ocupadas = sum(vagas.values())
