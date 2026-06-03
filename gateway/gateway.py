@@ -2,6 +2,8 @@ import socket
 import threading
 import time
 import sqlite3
+import os
+
 from generated import messages_pb2
 
 # =========================
@@ -22,7 +24,6 @@ total_saidas = 0
 cancela_aberta = True
 
 lock = threading.Lock()
-
 
 # =========================
 # BANCO DE DADOS
@@ -226,6 +227,13 @@ def handle_client(conn, addr):
                     f"OCUPACAO: {taxa:.2f}%"
                 )
 
+            elif req.command == "LISTAR":
+                resp.value = (
+                    "P1 - Parking Sensor\n"
+                    "fluxo_1 - Traffic Sensor\n"
+                    "C1 - Cancela"
+                )
+
             elif req.command == "OPEN":
                 cancela_aberta = True
                 update_cancela("OPEN")
@@ -313,10 +321,15 @@ def servidor_tcp():
 # =========================
 
 if __name__ == "__main__":
+
     print("================================")
     print("   GATEWAY INTELIGENTE")
-    print("   BANCO: dadosSQL.db")
     print("================================")
+
+    # 🔥 REMOVE BANCO ANTIGO SEMPRE
+    if os.path.exists(DB_NAME):
+        os.remove(DB_NAME)
+        print("[GATEWAY] Banco antigo removido")
 
     init_db()
 
