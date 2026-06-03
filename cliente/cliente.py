@@ -1,81 +1,72 @@
 import socket
-
 from generated import messages_pb2
+
 HOST = "127.0.0.1"
 PORT = 7000
 
 
+def enviar(client, cmd):
+    req = messages_pb2.ControlCommand()
+    req.command = cmd
+
+    client.send(req.SerializeToString())
+
+    data = client.recv(10000)
+
+    resp = messages_pb2.ControlCommand()
+    resp.ParseFromString(data)
+
+    return resp.value
+
+
 def menu():
-    print("\n===== CLIENTE ANALÍTICO =====")
-    print("1 - STATUS do estacionamento")
-    print("2 - MAPA de vagas")
-    print("3 - Reinicia sistema")
-    print("4 - Abre cancela")
-    print("5 - Fecha cancela")
-    print("6 - Listar sensores conectados")
-    print("7 - Relatório analítico")
-    print("8 - BOTÃO DE FALHA")
-    print("0 - sair")
+    print("\n--- MENU ---")
+    print("1 STATUS")
+    print("2 MAPA")
+    print("3 RESET")
+    print("4 ABRIR CANCELA")
+    print("5 FECHAR CANCELA")
+    print("6 LISTAR SENSORES")
+    print("7 ANALISE")
+    print("0 SAIR")
 
-def envia_requisicao(client,comando_str):
-    requisicao = messages_pb2.ControlCommand()
-    requisicao.command = comando_str
-
-    client.send(requisicao.SerializeToString())
-
-    informacao = client.recv(10000)
-    if not informacao:
-        return "conexao perdida"
-
-    resposta = messages_pb2.ControlCommand()
-    resposta.ParseFromString(informacao)
-
-    return resposta.value
 
 def main():
-
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client.connect((HOST, PORT))
 
-    print("Conectado ao gateway!")
+    print("Conectado ao Gateway")
 
     while True:
-
         menu()
-        op = input("Escolha: ")
+        op = input("> ")
 
         if op == "0":
             break
 
         elif op == "1":
-            print(envia_requisicao(client,"STATUS"))
+            print(enviar(client, "STATUS"))
 
         elif op == "2":
-            print(envia_requisicao(client,"MAPA"))
-
+            print(enviar(client, "MAPA"))
 
         elif op == "3":
-            print(envia_requisicao(client,"RESET"))
+            print(enviar(client, "RESET"))
 
         elif op == "4":
-            print(envia_requisicao(client,"OPEN"))
-
+            print(enviar(client, "OPEN"))
 
         elif op == "5":
-            print(envia_requisicao(client,"CLOSE"))
+            print(enviar(client, "CLOSE"))
 
         elif op == "6":
-            print(envia_requisicao(client,"LISTAR"))
+            print(enviar(client, "LISTAR"))
 
         elif op == "7":
-            print(envia_requisicao(client,"ANALISE"))
-
-        elif op == "8":
-            print(envia_requisicao(client, "FALHA"))
-
+            print(enviar(client, "ANALISE"))
 
         else:
-            print("comando invalido!")
+            print("Inválido")
 
     client.close()
 
