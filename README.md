@@ -71,7 +71,7 @@ Como Visualizar o banco de dados:
 
  8. Baixar o Xampp
    ```bash
-   (https://www.apachefriends.org/pt_br/index.html)
+   https://www.apachefriends.org/pt_br/index.html
    ```
  9. Colocar a pasta do trabalho detro do htdocs
    ```bash
@@ -81,5 +81,5 @@ Como Visualizar o banco de dados:
 
  11. Visualizar o painel do estacionamento
    ```bash
-   (http://localhost/trabalho-distribui-o-e-processo-de-dados/painel/index.php)
+   http://localhost/trabalho-distribui-o-e-processo-de-dados/painel/index.php
    ```  
