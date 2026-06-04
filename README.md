@@ -77,7 +77,7 @@ Como Visualizar o banco de dados:
    ```bash
    ....\xampp\htdocs\trabalho-distribui-o-e-processo-de-dados
    ```
- 10. Abri o XAMPP Ativar o Apache
+ 10. Abrir o XAMPP Ativar o Apache
 
  11. Visualizar o painel do estacionamento
    ```bash
