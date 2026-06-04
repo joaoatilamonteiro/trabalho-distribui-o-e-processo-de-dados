@@ -225,10 +225,14 @@ def processar_msg(msg):
                 print("[GATEWAY] IGNORADO (cancela fechada)")
                 return
 
-            if ocupadas < TOTAL_VAGAS:
-                vagas[vaga] = True
-                update_vaga(vaga, True)
-                total_entradas += 1
+            if not vagas[vaga]:
+                ocupadas = sum(vagas.values())
+                if ocupadas < TOTAL_VAGAS:
+                    vagas[vaga] = True
+                    update_vaga(vaga, True)
+                    total_entradas +=1
+            else:
+                return
 
         # SAÍDA
         elif acao in ["SAIDA", "saida", "LIVRE", "livre"]:
@@ -264,7 +268,7 @@ def enviar_comando_sensor(sensor_id, comando):
 # =========================
 
 def handle_client(conn, addr):
-    global cancela_aberta
+    global cancela_aberta, total_saidas, total_entradas
 
     print(f"[CLIENTE] conectado {addr}")
 
@@ -281,7 +285,7 @@ def handle_client(conn, addr):
 
             if req.command == "STATUS":
                 ocupadas, livres = calcular_estado()
-                resp.value = f"OCUP {ocupadas} | LIV {livres}"
+                resp.value = f"OCUPADAS {ocupadas} | LIVRES {livres}"
 
             elif req.command == "MAPA":
                 with lock:
@@ -295,6 +299,13 @@ def handle_client(conn, addr):
                     for i in vagas:
                         vagas[i] = False
                         update_vaga(i, False)
+                    total_entradas = 0
+                    total_saidas = 0
+                conn_db = sqlite3.connect(DB_NAME)
+                cur = conn_db.cursor()
+                cur.execute("DELETE FROM snapshot")
+                conn_db.commit()
+                conn_db.close()
 
                 resp.value = "RESET OK"
 
@@ -352,7 +363,7 @@ def handle_client(conn, addr):
 
 def salvar_snapshot():
     while True:
-        time.sleep(10)
+        time.sleep(2)
 
         with lock:
             ocupadas = sum(vagas.values())
