@@ -68,6 +68,7 @@ Como testar os sensores:
 
 
 Como Visualizar o banco de dados:
+
  8. Baixar o Xampp
    ```bash
    (https://www.apachefriends.org/pt_br/index.html)
