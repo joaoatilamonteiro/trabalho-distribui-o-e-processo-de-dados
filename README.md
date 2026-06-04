@@ -56,9 +56,29 @@ Como testar os sensores:
    ```bash
    python -m cliente.cliente
    ```
-   1 - STATUS
-   2 - MAPA
-   3 - RESET
-   4 - OPEN cancela
-   5 - CLOSE cancela
+1 STATUS
+2 MAPA
+3 RESET
+4 ABRIR CANCELA
+5 FECHAR CANCELA
+6 LISTAR SENSORES
+7 ANALISE
+8 Falha
+0 SAIR
 
+
+Como Visualizar o banco de dados:
+8. Baixar o Xampp
+   ```bash
+   (https://www.apachefriends.org/pt_br/index.html)
+   ```
+9. Colocar a pasta do trabalho detro do htdocs
+   ```bash
+   ....\xampp\htdocs\trabalho-distribui-o-e-processo-de-dados
+   ```
+10. Abri o XAMPP Ativar o Apache
+
+11. Visualizar o painel do estacionamento
+   ```bash
+   (http://localhost/trabalho-distribui-o-e-processo-de-dados/painel/index.php)
+   ```  
