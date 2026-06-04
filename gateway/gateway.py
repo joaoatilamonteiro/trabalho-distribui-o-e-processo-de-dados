@@ -2,7 +2,6 @@ import socket
 import threading
 import time
 import sqlite3
-import os
 
 from generated import messages_pb2
 
@@ -13,8 +12,10 @@ from generated import messages_pb2
 UDP_PORT = 6000
 TCP_PORT = 7000
 TOTAL_VAGAS = 100
-
-DB_NAME = "dadosSQL.db"
+MULTICAST_GROUP = "224.1.1.1"
+MULTICAST_PORT = 5007
+sensores_registrados = {}
+DB_NAME = "painel/dadosSQL.db"
 
 vagas = {i: False for i in range(1, TOTAL_VAGAS + 1)}
 
@@ -71,6 +72,33 @@ def init_db():
 
     conn.commit()
     conn.close()
+# =========================
+# carrega banco
+# =========================
+
+def carregar_memoria():
+    global total_entradas, total_saidas, cancela_aberta
+
+    conn = sqlite3.connect(DB_NAME)
+    cur = conn.cursor()
+
+    cur.execute("SELECT id, ocupada FROM vagas")
+
+    for linha in cur.fetchall():
+        vagas[linha[0]] = bool(linha[1])
+
+    cur.execute("SELECT valor FROM sistema WHERE chave = 'cancela'")
+    resultado_cancela = cur.fetchone()
+    if resultado_cancela:
+        cancela_aberta = (resultado_cancela[0] == "OPEN")
+    cur.execute("SELECT entradas, saidas FROM snapshot ORDER BY id DESC LIMIT 1")
+    resultado_snap = cur.fetchone()
+    if resultado_snap:
+        total_entradas = resultado_snap[0]
+        total_saidas = resultado_snap[1]
+
+    conn.close()
+    print("memoria restaurada!")
 
 
 # =========================
@@ -110,6 +138,38 @@ def update_cancela(estado):
 def calcular_estado():
     ocupadas = sum(vagas.values())
     return ocupadas, TOTAL_VAGAS - ocupadas
+
+
+# =========================
+# realizar descoberta
+# =========================
+
+def realizar_descoberta():
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+    sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 2)
+    sock.settimeout(5.0)
+
+    print("Iniciando descoberta de sensores ")
+    sock.sendto(b"DISCOVER_SENSORS",(MULTICAST_GROUP, MULTICAST_PORT))
+
+    while True:
+        try:
+            data, addr = sock.recvfrom(1024)
+            msg = messages_pb2.DiscoveryMessage()
+            msg.ParseFromString(data)
+
+            with lock:
+                sensores_registrados[msg.sensor_id] = {
+                    "tipo": msg.sensor_type,
+                    "ip": msg.ip if msg.ip != "127.0.0.1" else addr[0],
+                    "tcp_port":msg.tcp_port
+                }
+        except socket.timeout:
+            print("fim da janela de descoberta")
+            break
+        except Exception as e:
+            pass
+    sock.close()
 
 
 # =========================
@@ -176,7 +236,28 @@ def processar_msg(msg):
                 vagas[vaga] = False
                 update_vaga(vaga, False)
                 total_saidas += 1
+# =========================
+# ENVIO TCP PARA SENSORES
+# =========================
 
+def enviar_comando_sensor(sensor_id, comando):
+    if sensor_id not in sensores_registrados:
+        return f"Sensor {sensor_id} não encontrado na rede"
+
+    info = sensores_registrados[sensor_id]
+
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(2.0)
+        s.connect((info["ip"], info["tcp_port"]))
+        cmd_msg = messages_pb2.ControlCommand()
+        cmd_msg.command = comando
+        s.send(cmd_msg.SerializeToString())
+        s.close()
+
+        return "OK"
+    except Exception as e:
+        return f"ERRO {e}"
 
 # =========================
 # TCP CLIENTE
@@ -228,21 +309,30 @@ def handle_client(conn, addr):
                 )
 
             elif req.command == "LISTAR":
-                resp.value = (
-                    "P1 - Parking Sensor\n"
-                    "fluxo_1 - Traffic Sensor\n"
-                    "C1 - Cancela"
-                )
+                with lock:
+                    if not sensores_registrados:
+                        resp.value = "Nenhum sensor registrado ativo no momento."
+                    else:
+                        lista = ["=== Sensores Conectados ==="]
+                        for s_id, info in sensores_registrados.items():
+                            lista.append(
+                                f"ID: {s_id} | Tipo: {info['tipo']} | Endereço: {info['ip']}:{info['tcp_port']}")
+                        resp.value = "\n".join(lista)
 
             elif req.command == "OPEN":
                 cancela_aberta = True
                 update_cancela("OPEN")
-                resp.value = "CANCELA ABERTA"
+                rede = enviar_comando_sensor("C1", "OPEN")
+                resp.value = f"CANCELA ABERTA\nRede: {rede}"
 
             elif req.command == "CLOSE":
                 cancela_aberta = False
                 update_cancela("CLOSED")
-                resp.value = "CANCELA FECHADA"
+                rede = enviar_comando_sensor("C1", "CLOSE")
+                resp.value = f"CANCELA FECHADA\nRede: {rede}"
+
+            elif req.command == "FALHA":
+                pass
 
             else:
                 resp.value = "COMANDO INVALIDO"
@@ -262,7 +352,7 @@ def handle_client(conn, addr):
 
 def salvar_snapshot():
     while True:
-        time.sleep(20)
+        time.sleep(10)
 
         with lock:
             ocupadas = sum(vagas.values())
@@ -326,16 +416,14 @@ if __name__ == "__main__":
     print("   GATEWAY INTELIGENTE")
     print("================================")
 
-    # 🔥 REMOVE BANCO ANTIGO SEMPRE
-    if os.path.exists(DB_NAME):
-        os.remove(DB_NAME)
-        print("[GATEWAY] Banco antigo removido")
 
     init_db()
-
+    carregar_memoria()
+    realizar_descoberta()
     threading.Thread(target=servidor_tcp, daemon=True).start()
     threading.Thread(target=escutar_udp, daemon=True).start()
     threading.Thread(target=salvar_snapshot, daemon=True).start()
+
 
     while True:
         time.sleep(1)

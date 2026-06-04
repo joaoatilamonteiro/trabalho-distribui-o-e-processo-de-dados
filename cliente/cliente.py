@@ -28,6 +28,7 @@ def menu():
     print("5 FECHAR CANCELA")
     print("6 LISTAR SENSORES")
     print("7 ANALISE")
+    print("8 Falha")
     print("0 SAIR")
 
 
@@ -64,6 +65,9 @@ def main():
 
         elif op == "7":
             print(enviar(client, "ANALISE"))
+
+        elif op == "8":
+            print(enviar(client, "FALHA"))
 
         else:
             print("Inválido")
