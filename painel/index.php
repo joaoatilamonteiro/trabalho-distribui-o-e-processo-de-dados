@@ -55,7 +55,7 @@ $id = 1;
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
-<title>Smart Parking</title>
+<title>Super Estacionamento</title>
 
 <style>
 body {
