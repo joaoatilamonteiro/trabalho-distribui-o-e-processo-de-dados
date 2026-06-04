@@ -180,13 +180,14 @@ body {
 
 .car:hover {
     transform: scale(1.15);
+    
 }
 
 /* livre */
 .free {
     background: #2ecc71;
     box-shadow: 0 0 6px rgba(46,204,113,0.6);
-    transform: rotate(90deg);
+    transform: rotate(65deg);
 
 }
 
@@ -266,7 +267,9 @@ setTimeout(() => {
                     <?php $ocupada = $vagas[$id] ?? 0; ?>
 
                     <div class="car <?= $ocupada ? 'occupied' : 'free' ?>">
-                        <?= $id ?>
+                        <span style="display:inline-block; transform: rotate(90deg);">
+                            <?= $id ?>
+                        </span>
                     </div>
 
                     <?php $id++; ?>
