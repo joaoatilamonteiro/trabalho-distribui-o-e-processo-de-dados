@@ -331,20 +331,34 @@ def handle_client(conn, addr):
                         resp.value = "\n".join(lista)
 
             elif req.command == "OPEN":
-                cancela_aberta = True
-                update_cancela("OPEN")
+
                 rede = enviar_comando_sensor("C1", "OPEN")
-                resp.value = f"CANCELA ABERTA\nRede: {rede}"
+                if rede == "OK":
+                    cancela_aberta = True
+                    update_cancela("OPEN")
+                    resp.value = f"CANCELA ABERTA\nRede: {rede}"
+                else:
+                    estado_anterior = "ABERTA" if cancela_aberta else "FECHADA"
+                    update_cancela("OFFLINE")
+                    resp.value = f"FALHA AO ABRIR: Cancela indisponível.\nÚltimo estado conhecido: {estado_anterior}\nErro: {rede}"
 
             elif req.command == "CLOSE":
-                cancela_aberta = False
-                update_cancela("CLOSED")
                 rede = enviar_comando_sensor("C1", "CLOSE")
-                resp.value = f"CANCELA FECHADA\nRede: {rede}"
+                if rede == "OK":
+                    cancela_aberta = False
+                    update_cancela("CLOSED")
+                    resp.value = "CANCELA FECHADA"
+                else:
+                    estado_anterior = "ABERTA" if cancela_aberta else "FECHADA"
+                    update_cancela("OFFLINE")
+                    resp.value = f"FALHA AO FECHAR: Cancela indisponível.\nÚltimo estado conhecido: {estado_anterior}\nErro: {rede}"
 
             elif req.command == "FALHA":
-                pass
-
+                # Manda a ordem de desligamento para o sensor
+                rede = enviar_comando_sensor("C1", "CRASH")
+                estado_anterior = "ABERTA" if cancela_aberta else "FECHADA"
+                update_cancela("OFFLINE")
+                resp.value = f"SIMULACAO DE FALHA INICIADA.\nSensor C1 desligado.\nA cancela está travada na posição: {estado_anterior}"
             else:
                 resp.value = "COMANDO INVALIDO"
 

@@ -28,8 +28,17 @@ $cancela = $db->querySingle(
 );
 
 $cancela = $cancela ?: 'UNKNOWN';
-$cancela_texto = ($cancela === 'OPEN') ? 'ABERTA' : 'FECHADA';
-$cancela_cor = ($cancela === 'OPEN') ? '#2ecc71' : '#e74c3c';
+
+if ($cancela === 'OPEN') {
+    $cancela_texto = 'ABERTA';
+    $cancela_cor = '#2ecc71'; 
+} elseif ($cancela === 'OFFLINE') {
+    $cancela_texto = 'OFFLINE';
+    $cancela_cor = '#e74c3c'; 
+} else {
+    $cancela_texto = 'FECHADA';
+    $cancela_cor = '#e74c3c'; 
+}
 
 /* =========================
    VAGAS

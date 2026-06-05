@@ -1,3 +1,4 @@
+import os
 import socket
 import threading
 import time
@@ -134,6 +135,10 @@ class Cancela:
                     self.state = "CLOSED"
                     self.active = True
                     self.interval = 3
+
+                elif cmd.command == "CRASH":
+                    print("\nFALHA CRITICA\nSENSOR ENCERRANDO...")
+                    os._exit(0)
 
             conn.close()
 
