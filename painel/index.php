@@ -196,7 +196,7 @@ body {
 .free {
     background: #2ecc71;
     box-shadow: 0 0 6px rgba(46,204,113,0.6);
-    transform: rotate(65deg);
+    transform: rotate(90deg);
 
 }
 
